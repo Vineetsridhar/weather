@@ -5,6 +5,8 @@ import 'package:back_button_interceptor/back_button_interceptor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Settings extends StatefulWidget {
+  String data;
+  Settings(this.data);
   @override
   _SettingsState createState() => _SettingsState();
 }
@@ -67,7 +69,7 @@ class _SettingsState extends State<Settings> {
   _onBackPressed() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => MyHomePage()),
+      MaterialPageRoute(builder: (context) => MyHomePage(widget.data)),
     );
   }
 

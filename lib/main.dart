@@ -8,10 +8,44 @@ import 'Settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'HomeScreen.dart';
 import 'Credentials.dart';
+import 'TempScreen.dart';
 
 void main() => runApp(MyApp());
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  List places;
+  bool isEmpty = false;
+  bool isLoading = true;
+  String data;
+
+  _getData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    places = prefs.getStringList('places');
+
+    if (places == null) {
+      setState(() {
+        isEmpty = true;
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        data = places[0];
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  initState() {
+    super.initState();
+    _getData();
+  }
+
   @override
   Widget build(BuildContext context) {
     SystemChrome.setPreferredOrientations([
@@ -20,17 +54,22 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Weather',
       theme: ThemeData(primarySwatch: Colors.blue, fontFamily: 'Raleway'),
-      home: MyHomePage(),
+      home: isLoading
+          ? TempScreen()
+          : (isEmpty ? HomeScreen() : MyHomePage(data)),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-
   static Color accentColor = Color.fromRGBO(0x05, 0x38, 0x6b, 1);
   static Color mainColor = Colors.white;
   static Color darkBackgroundColor = Color.fromRGBO(0x1b, 0xb6, 0x5F, 1.0);
   static Color backgroundColor = Color.fromRGBO(0x5c, 0xdb, 0x95, 1.0);
+
+  String data;
+
+  MyHomePage(this.data);
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
@@ -41,18 +80,23 @@ class _MyHomePageState extends State<MyHomePage> {
   List daysList;
   bool gotData = false;
   bool theme;
-
-  
+  List data;
 
   static bool unit;
-  String url =
-      "https://api.darksky.net/forecast/${Credentials.key}/40.527512,-74.310310";
+  String url;
 
   @override
   void initState() {
     super.initState();
+    this.setData();
     this.getTheme();
     this.getWeatherData();
+  }
+
+  setData() {
+    data = widget.data.split("/");
+    url =
+        "https://api.darksky.net/forecast/${Credentials.key}/${data[1]},${data[2]}";
   }
 
   _onBackPressed() {
@@ -62,22 +106,24 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  getTheme() async{
+  getTheme() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     theme = (prefs.getBool('theme') ?? true);
     setState(() {
-     switch(theme){
+      switch (theme) {
         case true:
           MyHomePage.backgroundColor = Color.fromRGBO(0x5c, 0xdb, 0x95, 1.0);
-          MyHomePage.darkBackgroundColor = Color.fromRGBO(0x1b, 0xb6, 0x5F, 1.0);
+          MyHomePage.darkBackgroundColor =
+              Color.fromRGBO(0x1b, 0xb6, 0x5F, 1.0);
           MyHomePage.accentColor = Color.fromRGBO(0x05, 0x38, 0x6b, 1);
           break;
         case false:
-          MyHomePage.backgroundColor= Color.fromRGBO(0x82, 0x82, 0x82, 1.0);
-          MyHomePage.darkBackgroundColor = Color.fromRGBO(0x41, 0x41, 0x41, 1.0);
+          MyHomePage.backgroundColor = Color.fromRGBO(0x82, 0x82, 0x82, 1.0);
+          MyHomePage.darkBackgroundColor =
+              Color.fromRGBO(0x41, 0x41, 0x41, 1.0);
           MyHomePage.accentColor = Colors.lightBlue;
           break;
-      } 
+      }
     });
   }
 
@@ -91,9 +137,7 @@ class _MyHomePageState extends State<MyHomePage> {
         .get(Uri.encodeFull(url), headers: {'Accept': 'application/json'});
 
     setState(() {
-      Map<String, dynamic> weather =
-          jsonDecode(res.body) as Map<String, dynamic>;
-      this.weather = weather;
+      weather = jsonDecode(res.body) as Map<String, dynamic>;
       daysList = weather["daily"]["data"];
       gotData = true;
     });
@@ -119,7 +163,8 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: Text(
                         getDay(day.weekday),
                         style: TextStyle(
-                            fontSize: _width * 0.035, color: MyHomePage.mainColor),
+                            fontSize: _width * 0.035,
+                            color: MyHomePage.mainColor),
                       ),
                     ),
                     Padding(
@@ -127,7 +172,8 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: Text(
                         "${day.month}/${day.day}",
                         style: TextStyle(
-                            fontSize: _width * 0.035, color: MyHomePage.mainColor),
+                            fontSize: _width * 0.035,
+                            color: MyHomePage.mainColor),
                       ),
                     ),
                     Container(
@@ -141,7 +187,8 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: Text(
                         "${daysList[index]["temperatureLow"].round()}° ${daysList[index]["temperatureHigh"].round()}°",
                         style: TextStyle(
-                            fontSize: _width * 0.045, color: MyHomePage.mainColor),
+                            fontSize: _width * 0.045,
+                            color: MyHomePage.mainColor),
                       ),
                     ),
                   ],
@@ -179,27 +226,14 @@ class _MyHomePageState extends State<MyHomePage> {
     double width = MediaQuery.of(context).size.width;
     double iconFontSize = width * 0.03;
 
-    return (gotData ? buildHome(height, width, iconFontSize) : tempScreen());
-  }
-
-  Widget tempScreen() {
-    return (Scaffold(
-      backgroundColor: MyHomePage.backgroundColor,
-      body: Center(
-        child: Text(
-          "Loading...",
-          style: TextStyle(
-              color: Colors.white, fontSize: 50, fontWeight: FontWeight.bold),
-        ),
-      ),
-    ));
+    return (gotData ? buildHome(height, width, iconFontSize) : TempScreen());
   }
 
   Widget buildHome(double height, double width, double iconFontSize) {
     return Scaffold(
         appBar: AppBar(
           backgroundColor: MyHomePage.darkBackgroundColor,
-          title: Text("Woodbridge"),
+          title: Text("${data[0]}"),
           leading: IconButton(
             icon: Icon(Icons.arrow_back),
             onPressed: _onBackPressed,
@@ -212,7 +246,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => Settings()),
+                        MaterialPageRoute(
+                            builder: (context) => Settings(widget.data)),
                       );
                     }))
           ],
@@ -240,7 +275,8 @@ class _MyHomePageState extends State<MyHomePage> {
                           Text(
                             "Humidity:",
                             style: TextStyle(
-                                color: MyHomePage.mainColor, fontSize: iconFontSize),
+                                color: MyHomePage.mainColor,
+                                fontSize: iconFontSize),
                           ),
                           Text(
                             "${(weather["currently"]["humidity"] * 100).round()}%",
@@ -265,7 +301,8 @@ class _MyHomePageState extends State<MyHomePage> {
                           Text(
                             "Wind Speed:",
                             style: TextStyle(
-                                color: MyHomePage.mainColor, fontSize: iconFontSize),
+                                color: MyHomePage.mainColor,
+                                fontSize: iconFontSize),
                           ),
                           Text(
                             "${weather["currently"]["windSpeed"].round()} " +
@@ -292,7 +329,8 @@ class _MyHomePageState extends State<MyHomePage> {
                           Text(
                             "Precipitation:",
                             style: TextStyle(
-                                color: MyHomePage.mainColor, fontSize: iconFontSize),
+                                color: MyHomePage.mainColor,
+                                fontSize: iconFontSize),
                           ),
                           Text(
                             "${weather["currently"]["precipProbability"].round()}%",
