@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -9,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'HomeScreen.dart';
 import 'Credentials.dart';
 import 'TempScreen.dart';
+import 'Hourly.dart';
 
 void main() => runApp(MyApp());
 
@@ -67,7 +67,9 @@ class MyHomePage extends StatefulWidget {
   static Color darkBackgroundColor = Color.fromRGBO(0x1b, 0xb6, 0x5F, 1.0);
   static Color backgroundColor = Color.fromRGBO(0x5c, 0xdb, 0x95, 1.0);
 
-  String data;
+  final String data;
+
+  static bool unit = true;
 
   MyHomePage(this.data);
 
@@ -82,7 +84,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool theme;
   List data;
 
-  static bool unit;
+  bool unit = true;
   String url;
 
   @override
@@ -93,10 +95,12 @@ class _MyHomePageState extends State<MyHomePage> {
     this.getWeatherData();
   }
 
+
   setData() {
     data = widget.data.split("/");
     url =
         "https://api.darksky.net/forecast/${Credentials.key}/${data[1]},${data[2]}";
+    print(data);
   }
 
   _onBackPressed() {
@@ -131,6 +135,7 @@ class _MyHomePageState extends State<MyHomePage> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       unit = prefs.getBool('units') ?? true;
+      MyHomePage.unit = unit;
       url += (unit ? "" : "?units=si");
     });
     var res = await http
@@ -144,55 +149,66 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget builder(BuildContext context, int index) {
-    index += 1;
+    //index += 1;
     double _width = MediaQuery.of(context).size.width;
     double _height = MediaQuery.of(context).size.height;
-    DateTime day =
-        DateTime.fromMillisecondsSinceEpoch(daysList[index]["time"] * 1000);
+    DateTime day = DateTime.fromMillisecondsSinceEpoch(
+            (daysList[index]["time"] + int.parse(data[3])) * 1000)
+        .toUtc();
+
     return SingleChildScrollView(
       child: Column(
         children: <Widget>[
           Padding(
             padding: const EdgeInsets.all(5.0),
-            child: Container(
-                width: _width / 4,
-                child: Column(
-                  children: <Widget>[
-                    Padding(
-                      padding: const EdgeInsets.all(5.0),
-                      child: Text(
-                        getDay(day.weekday),
-                        style: TextStyle(
-                            fontSize: _width * 0.035,
-                            color: MyHomePage.mainColor),
+            child: InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => Hourly(data[0],"${daysList[index]["time"]}", "${data[1]}", "${data[2]}", int.parse(data[3]))),
+                );
+              },
+              child: Container(
+                  width: _width / 4,
+                  child: Column(
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.all(5.0),
+                        child: Text(
+                          //"${day.hour}:${day.minute}",
+                          getDay(day.weekday),
+                          style: TextStyle(
+                              fontSize: _width * 0.035,
+                              color: MyHomePage.mainColor),
+                        ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(5, 0, 5, 5),
-                      child: Text(
-                        "${day.month}/${day.day}",
-                        style: TextStyle(
-                            fontSize: _width * 0.035,
-                            color: MyHomePage.mainColor),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(5, 0, 5, 5),
+                        child: Text(
+                          "${day.month}/${day.day}",
+                          style: TextStyle(
+                              fontSize: _width * 0.035,
+                              color: MyHomePage.mainColor),
+                        ),
                       ),
-                    ),
-                    Container(
-                      height: _height * 0.1,
-                      child: Image.asset(
-                          "assets/dark/${daysList[index]["icon"]}.png",
-                          scale: 30),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(5.0),
-                      child: Text(
-                        "${daysList[index]["temperatureLow"].round()}° ${daysList[index]["temperatureHigh"].round()}°",
-                        style: TextStyle(
-                            fontSize: _width * 0.045,
-                            color: MyHomePage.mainColor),
+                      Container(
+                        height: _height * 0.1,
+                        child: Image.asset(
+                            "assets/dark/${daysList[index]["icon"]}.png",
+                            scale: 30),
                       ),
-                    ),
-                  ],
-                )),
+                      Padding(
+                        padding: const EdgeInsets.all(5.0),
+                        child: Text(
+                          "${daysList[index]["temperatureLow"].round()}° ${daysList[index]["temperatureHigh"].round()}°",
+                          style: TextStyle(
+                              fontSize: _width * 0.045,
+                              color: MyHomePage.mainColor),
+                        ),
+                      ),
+                    ],
+                  )),
+            ),
           ),
         ],
       ),
@@ -229,181 +245,187 @@ class _MyHomePageState extends State<MyHomePage> {
     return (gotData ? buildHome(height, width, iconFontSize) : TempScreen());
   }
 
-  Widget buildHome(double height, double width, double iconFontSize) {
-    return Scaffold(
-        appBar: AppBar(
-          backgroundColor: MyHomePage.darkBackgroundColor,
-          title: Text("${data[0]}"),
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back),
-            onPressed: _onBackPressed,
-          ),
-          actions: <Widget>[
-            Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8.0),
-                child: IconButton(
-                    icon: Icon(Icons.settings),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => Settings(widget.data)),
-                      );
-                    }))
-          ],
-        ),
-        backgroundColor: MyHomePage.backgroundColor,
-        body: Column(
-          children: <Widget>[
-            SizedBox(
-              height: height * 0.01,
-            ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                Flexible(
-                  flex: 1,
-                  child: Row(
-                    children: <Widget>[
-                      Image.asset('assets/humidity.png', scale: 10),
-                      SizedBox(
-                        width: 5,
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            "Humidity:",
-                            style: TextStyle(
-                                color: MyHomePage.mainColor,
-                                fontSize: iconFontSize),
-                          ),
-                          Text(
-                            "${(weather["currently"]["humidity"] * 100).round()}%",
-                            style: TextStyle(color: MyHomePage.mainColor),
-                          )
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-                Flexible(
-                  flex: 1,
-                  child: Row(
-                    children: <Widget>[
-                      Image.asset('assets/wind-icon.png', scale: 10),
-                      SizedBox(
-                        width: 5,
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            "Wind Speed:",
-                            style: TextStyle(
-                                color: MyHomePage.mainColor,
-                                fontSize: iconFontSize),
-                          ),
-                          Text(
-                            "${weather["currently"]["windSpeed"].round()} " +
-                                (unit ? "mph" : "m/s"),
-                            style: TextStyle(color: MyHomePage.mainColor),
-                          )
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-                Flexible(
-                  flex: 1,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Image.asset('assets/umbrella.png', scale: 10),
-                      SizedBox(
-                        width: 5,
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            "Precipitation:",
-                            style: TextStyle(
-                                color: MyHomePage.mainColor,
-                                fontSize: iconFontSize),
-                          ),
-                          Text(
-                            "${weather["currently"]["precipProbability"].round()}%",
-                            style: TextStyle(color: MyHomePage.mainColor),
-                          )
-                        ],
-                      )
-                    ],
-                  ),
-                )
-              ],
-            ),
-            //SizedBox(height:height*0.07),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  "${weather["currently"]["temperature"].round()}",
-                  style: TextStyle(
-                      color: MyHomePage.accentColor,
-                      fontSize: height * 0.125,
-                      fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  unit ? "°F" : "°C",
-                  style: TextStyle(
-                      color: MyHomePage.accentColor,
-                      fontSize: height * 0.0375,
-                      fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            Text(
-              weather["currently"]["summary"],
-              style: TextStyle(fontSize: 30, color: MyHomePage.mainColor),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(
-              height: height * 0.02,
-            ),
-            Image.asset(
-              "assets/dark/${weather["currently"]["icon"]}.png",
-              scale: (-0.04 * height + 43),
-            ),
-            Padding(
-                padding: EdgeInsets.symmetric(vertical: height * 0.02),
-                child: Text("5-Day Forecast",
-                    style: TextStyle(
-                      fontSize: width * 0.12,
-                      color: MyHomePage.mainColor,
-                    ))),
+  Color getColor(data) {
+    return Colors.white;
+  }
 
-            Expanded(
-              child: Column(
+  Widget buildHome(double height, double width, double iconFontSize) {
+    return WillPopScope(
+      onWillPop: (){_onBackPressed();},
+          child: Scaffold(
+          appBar: AppBar(
+            backgroundColor: MyHomePage.darkBackgroundColor,
+            title: Text("${data[0]}"),
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back),
+              onPressed: _onBackPressed,
+            ),
+            actions: <Widget>[
+              Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  child: IconButton(
+                      icon: Icon(Icons.settings),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => Settings(widget.data)),
+                        );
+                      }))
+            ],
+          ),
+          backgroundColor: MyHomePage.backgroundColor,
+          body: Column(
+            children: <Widget>[
+              SizedBox(
+                height: height * 0.01,
+              ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                          child: SizedBox(
-                        height: height * 0.22,
-                        child: ListView.builder(
-                          itemCount: 5,
-                          itemBuilder: (BuildContext ctxt, int index) =>
-                              builder(ctxt, index),
-                          scrollDirection: Axis.horizontal,
+                  Flexible(
+                    flex: 1,
+                    child: Row(
+                      children: <Widget>[
+                        Image.asset('assets/humidity.png', scale: 10),
+                        SizedBox(
+                          width: 5,
                         ),
-                      )),
-                    ],
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              "Humidity:",
+                              style: TextStyle(
+                                  color: MyHomePage.mainColor,
+                                  fontSize: iconFontSize),
+                            ),
+                            Text(
+                              "${(weather["currently"]["humidity"] * 100).round()}%",
+                              style: TextStyle(color: MyHomePage.mainColor),
+                            )
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    flex: 1,
+                    child: Row(
+                      children: <Widget>[
+                        Image.asset('assets/wind-icon.png', scale: 10),
+                        SizedBox(
+                          width: 5,
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              "Wind Speed:",
+                              style: TextStyle(
+                                  color: MyHomePage.mainColor,
+                                  fontSize: iconFontSize),
+                            ),
+                            Text(
+                              "${weather["currently"]["windSpeed"].round()} " +
+                                  (unit ? "mph" : "m/s"),
+                              style: TextStyle(color: MyHomePage.mainColor),
+                            )
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    flex: 1,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Image.asset('assets/umbrella.png', scale: 10),
+                        SizedBox(
+                          width: 5,
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              "Precipitation:",
+                              style: TextStyle(
+                                  color: MyHomePage.mainColor,
+                                  fontSize: iconFontSize),
+                            ),
+                            Text(
+                              "${(weather["currently"]["precipProbability"] * 100).round()}%",
+                              style: TextStyle(color: MyHomePage.mainColor),
+                            )
+                          ],
+                        )
+                      ],
+                    ),
+                  )
+                ],
+              ),
+              //SizedBox(height:height*0.07),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text(
+                    "${weather["currently"]["temperature"].round()}",
+                    style: TextStyle(
+                        color: MyHomePage.accentColor,
+                        fontSize: height * 0.125,
+                        fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    unit ? "°F" : "°C",
+                    style: TextStyle(
+                        color: MyHomePage.accentColor,
+                        fontSize: height * 0.0375,
+                        fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
-            ),
-          ],
-        ));
+              Text(
+                weather["currently"]["summary"],
+                style: TextStyle(fontSize: 30, color: MyHomePage.mainColor),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(
+                height: height * 0.02,
+              ),
+              Image.asset("assets/dark/${weather["currently"]["icon"]}.png",
+                  scale: (-0.04 * height + 43),
+                  color: getColor(weather["currently"]["icon"])),
+              Padding(
+                  padding: EdgeInsets.symmetric(vertical: height * 0.02),
+                  child: Text("5-Day Forecast",
+                      style: TextStyle(
+                        fontSize: width * 0.12,
+                        color: MyHomePage.mainColor,
+                      ))),
+
+              Expanded(
+                child: Column(
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                            child: SizedBox(
+                          height: height * 0.22,
+                          child: ListView.builder(
+                            itemCount: 5,
+                            itemBuilder: (BuildContext ctxt, int index) =>
+                                builder(ctxt, index),
+                            scrollDirection: Axis.horizontal,
+                          ),
+                        )),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          )),
+    );
   }
 }

@@ -9,6 +9,7 @@ import 'Credentials.dart';
 import 'package:http/http.dart' as http;
 import 'package:random_color/random_color.dart';
 import 'TempScreen.dart';
+import 'NewPlace.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -61,7 +62,6 @@ class _HomeScreenState extends State<HomeScreen> {
     Location location = Location();
     var position;
     String url;
-    String place;
 
     await getData();
 
@@ -89,20 +89,23 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!found) {
         setState(() {
           places.add(
-              "${results["results"][0]["components"]["city"]}/${position.latitude}/${position.longitude}");
+              "${results["results"][0]["components"]["city"]}/${position.latitude}/${position.longitude}/${results["results"][0]["annotations"]["timezone"]["offset_sec"]}");
         });
         prefs.setStringList('places', places);
       }
       print(places);
     } catch (e) {
-      if (e.code == 'PERMISSION_DENIED') {
-        print('Permission denied');
-      }
+        if(places.length == 0) newPlace();
     }
     print(results["results"][0]["components"]);
   }
 
-
+  newPlace() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => NewPlace()),
+    );
+  }
 
   mainScreen() => Scaffold(
       appBar: AppBar(
@@ -121,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Align(
               alignment: Alignment.bottomRight,
               child: FloatingActionButton(
+                onPressed: newPlace,
                 backgroundColor: MyHomePage.accentColor,
                 child: Icon(Icons.add),
               ),
