@@ -28,8 +28,6 @@ class _NewPlaceState extends State<NewPlace> {
     super.initState();
   }
 
-
-
   _onBackPressed() {
     Navigator.push(
       context,
@@ -54,6 +52,7 @@ class _NewPlaceState extends State<NewPlace> {
     if (query.isNotEmpty) {
       url =
           "https://api.opencagedata.com/geocode/v1/json?q=$input&key=${Credentials.geokey}";
+      print(url);
       var res = await http
           .get(Uri.encodeFull(url), headers: {'Accept': 'application/json'});
       setState(() {
@@ -95,7 +94,17 @@ class _NewPlaceState extends State<NewPlace> {
 
   builder(context, index) {
     return (ListTile(
-      title: Text(places[index].split("/")[0]),
+      title: Text(
+        places[index]
+            .split("/")[0]
+            .substring(0, places[index].split("/")[0].indexOf(",")),
+        style: TextStyle(color: Colors.white),
+      ),
+      subtitle: Text(
+          places[index].split("/")[0].substring(
+                places[index].split("/")[0].indexOf(",") + 2,
+              ),
+          style: TextStyle(color: Colors.white)),
       onTap: () {
         print(places[index]);
         addToData(places[index]);
@@ -110,12 +119,19 @@ class _NewPlaceState extends State<NewPlace> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: (){_onBackPressed();},
-          child: Scaffold(
+      onWillPop: () {
+        _onBackPressed();
+      },
+      child: Scaffold(
         appBar: AppBar(
           backgroundColor: MyHomePage.darkBackgroundColor,
           title: Text("New Place"),
-          leading: IconButton(icon:Icon(Icons.arrow_back), onPressed: (){_onBackPressed();},),
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: () {
+              _onBackPressed();
+            },
+          ),
         ),
         backgroundColor: MyHomePage.backgroundColor,
         body: Column(
@@ -126,7 +142,9 @@ class _NewPlaceState extends State<NewPlace> {
                 controller: _searchQuery,
                 decoration: InputDecoration(
                   labelText: "Type a city / ZIP",
+                  fillColor: MyHomePage.mainColor,
                 ),
+                style: TextStyle(color: MyHomePage.mainColor),
                 onChanged: (input) => _onChange(input),
               ),
             ),

@@ -27,7 +27,7 @@ class _SettingsState extends State<Settings> {
     
     setState(() {
       setting = (prefs.getBool('units') ?? true);
-      theme = (prefs.getBool('theme') ?? true);
+      theme = (prefs.getBool('theme') ?? false);
     });
   }
 
@@ -50,8 +50,8 @@ class _SettingsState extends State<Settings> {
           MyHomePage.accentColor = Color.fromRGBO(0x05, 0x38, 0x6b, 1);
           break;
         case false:
-          MyHomePage.backgroundColor= Color.fromRGBO(0x82, 0x82, 0x82, 1.0);
-          MyHomePage.darkBackgroundColor = Color.fromRGBO(0x41, 0x41, 0x41, 1.0);
+          MyHomePage.backgroundColor= Color.fromRGBO(0x30, 0x30, 0x30, 1.0);
+          MyHomePage.darkBackgroundColor = Color.fromRGBO(0x21, 0x21, 0x21, 1.0);
           MyHomePage.accentColor = Colors.lightBlue;
           break;
       }

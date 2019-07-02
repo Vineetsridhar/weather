@@ -9,6 +9,7 @@ import 'HomeScreen.dart';
 import 'Credentials.dart';
 import 'TempScreen.dart';
 import 'Hourly.dart';
+import 'TimePicker.dart';
 
 void main() => runApp(MyApp());
 
@@ -53,19 +54,20 @@ class _MyAppState extends State<MyApp> {
     ]);
     return MaterialApp(
       title: 'Weather',
-      theme: ThemeData(primarySwatch: Colors.blue, fontFamily: 'Raleway'),
+      theme: ThemeData(fontFamily: 'Raleway'),
       home: isLoading
           ? TempScreen()
           : (isEmpty ? HomeScreen() : MyHomePage(data)),
+          debugShowCheckedModeBanner: false,
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  static Color accentColor = Color.fromRGBO(0x05, 0x38, 0x6b, 1);
   static Color mainColor = Colors.white;
-  static Color darkBackgroundColor = Color.fromRGBO(0x1b, 0xb6, 0x5F, 1.0);
-  static Color backgroundColor = Color.fromRGBO(0x5c, 0xdb, 0x95, 1.0);
+  static Color backgroundColor = Color.fromRGBO(0x30, 0x30, 0x30, 1.0);
+  static Color darkBackgroundColor = Color.fromRGBO(0x21, 0x21, 0x21, 1.0);
+  static Color accentColor = Colors.lightBlue;
 
   final String data;
 
@@ -95,7 +97,6 @@ class _MyHomePageState extends State<MyHomePage> {
     this.getWeatherData();
   }
 
-
   setData() {
     data = widget.data.split("/");
     url =
@@ -112,7 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   getTheme() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    theme = (prefs.getBool('theme') ?? true);
+    theme = (prefs.getBool('theme') ?? false);
     setState(() {
       switch (theme) {
         case true:
@@ -122,9 +123,9 @@ class _MyHomePageState extends State<MyHomePage> {
           MyHomePage.accentColor = Color.fromRGBO(0x05, 0x38, 0x6b, 1);
           break;
         case false:
-          MyHomePage.backgroundColor = Color.fromRGBO(0x82, 0x82, 0x82, 1.0);
+          MyHomePage.backgroundColor = Color.fromRGBO(0x30, 0x30, 0x30, 1.0);
           MyHomePage.darkBackgroundColor =
-              Color.fromRGBO(0x41, 0x41, 0x41, 1.0);
+              Color.fromRGBO(0x21, 0x21, 0x21, 1.0);
           MyHomePage.accentColor = Colors.lightBlue;
           break;
       }
@@ -165,7 +166,13 @@ class _MyHomePageState extends State<MyHomePage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => Hourly(data[0],"${daysList[index]["time"]}", "${data[1]}", "${data[2]}", int.parse(data[3]))),
+                  MaterialPageRoute(
+                      builder: (context) => Hourly(
+                          data[0],
+                          "${daysList[index]["time"]}",
+                          "${data[1]}",
+                          "${data[2]}",
+                          int.parse(data[3]))),
                 );
               },
               child: Container(
@@ -251,27 +258,38 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget buildHome(double height, double width, double iconFontSize) {
     return WillPopScope(
-      onWillPop: (){_onBackPressed();},
-          child: Scaffold(
+      onWillPop: () {
+        _onBackPressed();
+      },
+      child: Scaffold(
           appBar: AppBar(
             backgroundColor: MyHomePage.darkBackgroundColor,
-            title: Text("${data[0]}"),
+            title: Text("${data[0].substring(0, data[0].indexOf(","))}"),
             leading: IconButton(
               icon: Icon(Icons.arrow_back),
               onPressed: _onBackPressed,
             ),
             actions: <Widget>[
+              IconButton(
+                  icon: Icon(Icons.access_time),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => TimePicker(widget.data)),
+                    );
+                  }),
               Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8.0),
-                  child: IconButton(
-                      icon: Icon(Icons.settings),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => Settings(widget.data)),
-                        );
-                      }))
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: IconButton(
+                    icon: Icon(Icons.settings),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => Settings(widget.data)),
+                      );
+                    }),
+              ),
             ],
           ),
           backgroundColor: MyHomePage.backgroundColor,

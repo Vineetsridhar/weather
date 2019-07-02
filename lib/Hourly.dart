@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:weather/TempScreen.dart';
 import 'main.dart';
 import 'Credentials.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
 class Hourly extends StatefulWidget {
@@ -38,6 +37,7 @@ class _HourlyState extends State<Hourly> {
     url =
         "https://api.darksky.net/forecast/${Credentials.key}/${widget.lat},${widget.long},${widget.time}";
     url += (MyHomePage.unit ? "" : "?units=si");
+    print(url);
 
     var res = await http
         .get(Uri.encodeFull(url), headers: {'Accept': 'application/json'});
@@ -82,7 +82,7 @@ class _HourlyState extends State<Hourly> {
                 child: Image.asset(
                   "assets/dark/${hours[i]["icon"]}.png",
                   scale: 30,
-                  color: MyHomePage.accentColor,
+                  color: MyHomePage.mainColor,
                 )),
             Expanded(
               flex: 4,
@@ -94,7 +94,7 @@ class _HourlyState extends State<Hourly> {
                     Text(
                       getFormattedTime(current),
                       style: TextStyle(
-                          color: MyHomePage.accentColor,
+                          color: MyHomePage.mainColor,
                           fontSize: height * 0.0222,
                           fontWeight: FontWeight.bold),
                     ),
@@ -103,9 +103,10 @@ class _HourlyState extends State<Hourly> {
                     ),
                     Text(
                       hours[i]["summary"],
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: MyHomePage.accentColor,
-                        fontSize: (hours[i]["summary"].split(" ").length > 3
+                        color: MyHomePage.mainColor,
+                        fontSize: (hours[i]["summary"].length > 13
                             ? height * 0.018
                             : height * 0.02222),
                       ),
@@ -137,14 +138,14 @@ class _HourlyState extends State<Hourly> {
                     Text(
                       "${hours[i]["temperature"].round()}",
                       style: TextStyle(
-                        color: MyHomePage.accentColor,
+                        color: MyHomePage.mainColor,
                         fontSize: height * 0.02778,
                       ),
                     ),
                     Text(
                       MyHomePage.unit ? "°F" : "°C",
                       style: TextStyle(
-                        color: MyHomePage.accentColor,
+                        color: MyHomePage.mainColor,
                         fontSize: 15,
                       ),
                     ),

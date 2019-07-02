@@ -25,13 +25,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   initState() {
     super.initState();
-    this.getTheme();
+    //this.getTheme();
     this.getLocation();
+    
   }
 
   getTheme() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    theme = (prefs.getBool('theme') ?? true);
+    theme = (prefs.getBool('theme') ?? false);
 
     setState(() {
       switch (theme) {
@@ -78,7 +79,8 @@ class _HomeScreenState extends State<HomeScreen> {
       bool found = false;
       for (int i = 0; i < places.length; i++) {
         String item = places[i];
-        if (item.split("/")[0] == results["results"][0]["components"]["city"]) {
+        if (item.split("/")[0] ==
+            "${results["results"][0]["components"]["city"]}, ${results["results"][0]["components"]["state"]}") {
           String temp = places[0];
           places[0] = places[i];
           places[i] = temp;
@@ -89,13 +91,13 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!found) {
         setState(() {
           places.add(
-              "${results["results"][0]["components"]["city"]}/${position.latitude}/${position.longitude}/${results["results"][0]["annotations"]["timezone"]["offset_sec"]}");
+              "${results["results"][0]["components"]["city"]}, ${results["results"][0]["components"]["state"]}/${position.latitude}/${position.longitude}/${results["results"][0]["annotations"]["timezone"]["offset_sec"]}");
         });
         prefs.setStringList('places', places);
       }
       print(places);
     } catch (e) {
-        if(places.length == 0) newPlace();
+      if (places.length == 0) newPlace();
     }
     print(results["results"][0]["components"]);
   }
@@ -134,39 +136,50 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       backgroundColor: MyHomePage.backgroundColor);
 
+
   Widget builder(context, index) {
     double _width = MediaQuery.of(context).size.width;
     double _height = MediaQuery.of(context).size.height;
     RandomColor _randomColor = RandomColor();
 
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => MyHomePage(places[index])),
-          );
-        },
-        child: Container(
-            width: _width,
-            height: _height / 10,
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(5.0),
-                color: _randomColor.randomColor(
-                    colorHue: ColorHue.blue,
-                    colorSaturation: ColorSaturation.lowSaturation),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black45,
-                      blurRadius: 10,
-                      offset: Offset(5, 5))
-                ]),
-            child: Center(
-                child: Text(
-              places[index].split("/")[0],
-              style: TextStyle(color: Colors.white, fontSize: 20),
-            ))),
+    return Dismissible(
+      key: Key(places[index]),
+      onDismissed: (direction) {
+        setState(() {
+          places.removeAt(index);
+        });
+        prefs.setStringList('places', places);
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => MyHomePage(places[index])),
+            );
+          },
+          child: Container(
+              width: _width,
+              height: _height / 10,
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(5.0),
+                  color: _randomColor.randomColor(
+                      colorHue: ColorHue.blue,
+                      colorSaturation: ColorSaturation.lowSaturation),
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black45,
+                        blurRadius: 10,
+                        offset: Offset(5, 5))
+                  ]),
+              child: Center(
+                  child: Text(
+                places[index].split("/")[0],
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ))),
+        ),
       ),
     );
   }
